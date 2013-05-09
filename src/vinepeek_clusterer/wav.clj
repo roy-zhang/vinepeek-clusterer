@@ -16,18 +16,6 @@
 	    (partition (quot (count specFrame) bins) specFrame))
 	  )
 
-(defn spectrogram [wav]
-   (->> wav
-        (new Wave)
-        (new Spectrogram)
-        (.getAbsoluteSpectrogramData)
-        (apply map list )
-        (map avg )
-        (map #(spec-frame-to-avgs 5 %))
-        )
-  )
-
-
     (defn fingerprint [wav]
       (.getFingerprint (Wave. wav))
       )
@@ -46,13 +34,21 @@
       ( #(.renderSpectrogramData (new GraphicRender) % jpg) )
  ))
 
+
+
 	
 	(defn- double-array-2d [ccoll]
 	  (into-array (map double-array ccoll)))
-
-(defn process [wav] 
-  {
-   :imgPath     (str "op/" wav "-image.jpg")
-   :fingerprint (fingerprint wav)
-   }
-  )
+ 
+ 
+(defn image-wav-absolute [wav jpg]
+  (let [absSpecDat (-> wav
+                     (Wave. )
+                     (Spectrogram.)
+                     (.getAbsoluteSpectrogramData)
+                     (drop 3) )
+        maxDblLogged (Math/log (apply max (map (partial apply max) absSpecDat)))
+        normed       (double-array-2d (map (fn [spec] 
+                                             (map   #(/ (Math/log %) maxDblLogged) spec))
+                                        absSpecDat))  ]
+      (.renderSpectrogramData (new GraphicRender) normed jpg)))

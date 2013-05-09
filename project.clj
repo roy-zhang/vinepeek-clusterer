@@ -6,4 +6,6 @@
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [clj-http "0.6.5"]
                  [org.clojure/data.json "0.2.1"]
-                 [prismatic/plumbing "0.1.0"]])
+                 [prismatic/plumbing "0.1.0"]
+                 [clj-time "0.5.0"]
+                 ])
