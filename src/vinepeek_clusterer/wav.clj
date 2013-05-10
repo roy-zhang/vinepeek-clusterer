@@ -34,8 +34,6 @@
       ( #(.renderSpectrogramData (new GraphicRender) % jpg) )
  ))
 
-
-
 	
 	(defn- double-array-2d [ccoll]
 	  (into-array (map double-array ccoll)))
