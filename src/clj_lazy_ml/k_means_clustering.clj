@@ -164,7 +164,7 @@
   Clusterer
     (centroids [this]     (if centroidMaps 
                             (into [] (r/map   #(unnormalize typeVec minMax %)  (r/map vec (keys centroidMaps) )))
-                            (interpolated-diagonals minMax k)
+                            toProcess
                             ))
     (training-points [this] (into [] (r/map #(unnormalize typeVec minMax %) (aconcat (vals centroidMaps))))  ) 
     (centroid-maps [this] (->> centroidMaps

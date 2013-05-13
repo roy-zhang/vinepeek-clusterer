@@ -1,15 +1,17 @@
 (ns vinepeek-clusterer.core
   (:use [clj-lazy-ml.k-means-clustering]
-       [clojure.java.io :only [delete-file]]
-       [vinepeek-clusterer 
+        [clojure.java.io :only [delete-file]]
+        [clojure.data.json :as json]
+        [vinepeek-clusterer 
             [crawler    :as c ]
             [vine-parse :as v ]
             [image      :as i ]
             [wav        :as w ]]
-       ))
+       )
+    (:import (java.io File)
+           (java.net URL URI)))
 
-(def cfg { :opDir "op"})
-
+(def cfg { :opDir "op"})a
 
 (defn path []  (. (java.io.File. ".") getCanonicalPath))
   
@@ -42,7 +44,7 @@
         videoPath    (str idPath ".mp4" )
         wavPath      (str idPath "\\audio.wav")
         spectrumPath (str idPath "\\spectrum.jpg")]
-    (delete-file videoPath true)
+    ;(delete-file videoPath true)
     (delete-file wavPath true)
     ))
 
@@ -57,7 +59,7 @@
        (:weeks_old       (:profile vine)) ;age of the profile
        (:followers_count (:profile vine)) ;followers
        (:statuses_count  (:profile vine)) ;total tweets
-       (:lang            (:profile vine)) ;language  eg  "en" 
+       (:lang            (:profile vine)) ;language 
        (:mentionsCount   vine)            ;how many people @ed in tweet 
        (:local_hour      vine)            ;local time of tweet  ex. 9.583 for 9:35ish
        (:wavPrint        vine)            ;wav fingerprint
@@ -65,22 +67,57 @@
        )
      ))
 
-(defn add-to-clusterer [clusterer vine] (cons clusterer (rearrage-vine-for-clusterer vine)))
+  (defn spit-vine [vine]
+    (let [newPath   (str (path) "\\" (:opDir cfg) "\\" (:id vine) ".txt")]
+      (spit newPath (json/write-str vine)) vine ))
+  
+  (defn slurp-vine [txtPath]
+    (let [path       (str (path) "\\" (:opDir cfg) "\\" txtPath)
+          jsoned     (json/read-str (slurp path))]
+      (into {} 
+            (for [[k v] jsoned] { (keyword k) v}))
+      ))
+    
+  (defn list-files
+    ([] 
+      (seq (.list (java.io.File. (str (path) "\\" (:opDir cfg))))))
+        
+    ([ending]
+      (filter (fn [string] (= (map identity ending) 
+                              (take-last (count ending) string)))
+        (list-files) ))
+    )
   
 (defn loop-process  [times]
   (let [clusterer* (atom (setup-clusterer))]
     (dotimes [n times]
-      (do (. Thread (sleep 6000))
+      (try
+	      (do (. Thread (sleep 6000))
+	        (->> (c/get-current-vine)
+	             (v/modify-vine)
+	             (extract-images-and-wav )
+	             (rearrage-vine-for-clusterer )
+	             (swap! clusterer* conj)
+	             ((fn [clusterer] (println (centroids clusterer))))
+             ))
+         (catch Exception e "")
+       ))))
+
+(defn loop-vine-retention  [times]
+    (dotimes [n times]
+      (try 
+      (do (. Thread (sleep 3000))
         (->> (c/get-current-vine)
              (v/modify-vine)
              (extract-images-and-wav )
-             (swap! clusterer* add-to-clusterer)
-             ((fn [clusterer] (println (centroids clusterer))))
-             
-          )))))
+             (spit-vine)
+             (delete-op-folder)
+          ))
+      (catch Exception e "")
+      )))
    
 
 (defn -main  [& args]
-  (loop-process 5)
+  (loop-process 100)
 
   )

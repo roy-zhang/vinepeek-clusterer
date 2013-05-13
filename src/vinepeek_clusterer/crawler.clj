@@ -7,7 +7,7 @@
 
 (defn get-current-vine [] 
   "a get this this url seems to return everything needed"
-  (:body (client/get "http://vinepeek.com/videos" {:as :json})))
+  (:body (client/get "http://vpeeker.com/videos" {:as :json})))
 
 (defn download-video [vineMap path]
   (with-open [writer (clojure.java.io/output-stream path)]
