@@ -20,9 +20,15 @@
       (.getFingerprint (Wave. wav))
       )
     
+        (defn vec-to-byte-array [vec]
+          (byte-array (map byte vec))
+          )
+    
     (defn similarity [fp1 fp2]
-      (.getFingerprintsSimilarity (FingerprintSimilarityComputer. fp1 fp2))
-      )
+      (.getSimilarity 
+        (.getFingerprintsSimilarity 
+          (FingerprintSimilarityComputer. (vec-to-byte-array fp1) (vec-to-byte-array fp2)))
+      ))
 
 
 (defn image-wav-normalized [wav jpg]
@@ -33,20 +39,3 @@
       (.getNormalizedSpectrogramData)
       ( #(.renderSpectrogramData (new GraphicRender) % jpg) )
  ))
-
-	
-	(defn- double-array-2d [ccoll]
-	  (into-array (map double-array ccoll)))
- 
- 
-(defn image-wav-absolute [wav jpg]
-  (let [absSpecDat (-> wav
-                     (Wave. )
-                     (Spectrogram.)
-                     (.getAbsoluteSpectrogramData)
-                     (drop 3) )
-        maxDblLogged (Math/log (apply max (map (partial apply max) absSpecDat)))
-        normed       (double-array-2d (map (fn [spec] 
-                                             (map   #(/ (Math/log %) maxDblLogged) spec))
-                                        absSpecDat))  ]
-      (.renderSpectrogramData (new GraphicRender) normed jpg)))

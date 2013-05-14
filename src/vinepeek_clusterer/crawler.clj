@@ -21,9 +21,3 @@
 
 
 
-
-
-(defn write-json-to-file [vineMap path]
-  (spit path (json/write-str vineMap)))
-
-

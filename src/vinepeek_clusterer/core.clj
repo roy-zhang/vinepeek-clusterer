@@ -11,7 +11,7 @@
     (:import (java.io File)
            (java.net URL URI)))
 
-(def cfg { :opDir "op"})a
+(def cfg { :opDir "op"})
 
 (defn path []  (. (java.io.File. ".") getCanonicalPath))
   
@@ -54,7 +54,7 @@
   (decaying-kmeans-clusterer 5 [:double :double :double languageCodes :double :double :wav-fingerprint :RGB]
                              :centroidHalfLife 600 :centroidCapacity 2000 :maxLoops 5))
 
-   (defn rearrage-vine-for-clusterer [vine]
+   (defn rearrange-vine-for-clusterer [vine]
      (vector 
        (:weeks_old       (:profile vine)) ;age of the profile
        (:followers_count (:profile vine)) ;followers
@@ -66,29 +66,33 @@
        (first (:colors   vine)            ; first average color of video
        )
      ))
+   
+
 
   (defn spit-vine [vine]
     (let [newPath   (str (path) "\\" (:opDir cfg) "\\" (:id vine) ".txt")]
       (spit newPath (json/write-str vine)) vine ))
   
-  (defn slurp-vine [txtPath]
-    (let [path       (str (path) "\\" (:opDir cfg) "\\" txtPath)
-          jsoned     (json/read-str (slurp path))]
-      (into {} 
-            (for [[k v] jsoned] { (keyword k) v}))
-      ))
+  (defn slurp-vine
+    "deserializes txt file in op folder"
+    ([txtPath]
+      (let [path       (str (path) "\\" (:opDir cfg) "\\" txtPath)
+            jsoned     (json/read-str (slurp path))]
+        (into {} (for [[k v] jsoned] { (keyword k) v}))))
+    ([subFolder txtPath]
+      (slurp-vine (str subFolder "\\" txtPath)))
+    )
     
   (defn list-files
-    ([] 
-      (seq (.list (java.io.File. (str (path) "\\" (:opDir cfg))))))
-        
-    ([ending]
-      (filter (fn [string] (= (map identity ending) 
-                              (take-last (count ending) string)))
-        (list-files) ))
+    ([path] 
+      (seq (.list (java.io.File. path))))
+    ([path ending]
+      (filter (fn [string] (= (map identity ending) (take-last (count ending) string)))
+        (list-files path) ))
     )
   
 (defn loop-process  [times]
+  "creates a clusterer1 and sticks new vines into it every 6 seconds"
   (let [clusterer* (atom (setup-clusterer))]
     (dotimes [n times]
       (try
@@ -96,7 +100,7 @@
 	        (->> (c/get-current-vine)
 	             (v/modify-vine)
 	             (extract-images-and-wav )
-	             (rearrage-vine-for-clusterer )
+	             (rearrange-vine-for-clusterer )
 	             (swap! clusterer* conj)
 	             ((fn [clusterer] (println (centroids clusterer))))
              ))
@@ -104,6 +108,7 @@
        ))))
 
 (defn loop-vine-retention  [times]
+  "just downloads a new vine every 3 seconds and extracts fingerprint"
     (dotimes [n times]
       (try 
       (do (. Thread (sleep 3000))
@@ -117,7 +122,46 @@
       )))
    
 
+;testing just the fingerprint with the clusterer
+  (defn testing-audio-fingerprint []
+    "stick shuffled mix into clusterer, see how many actually get clustered together"
+    (let [ rearrange-vine   (fn [vine] (vector (:wavPrint vine) ))
+           clusterer         (decaying-kmeans-clusterer 2 [ :wav-fingerprint ]
+                             :centroidHalfLife 600 :centroidCapacity 2000 :maxLoops 5)
+           
+           indoorDir        (str (path) "\\" (:opDir cfg) "\\indoorpets")
+           outdoorDir       (str (path) "\\" (:opDir cfg) "\\outdoors")
+           indoorRears      (map (comp rearrange-vine (partial slurp-vine  "indoorpets"))
+                                 (list-files indoorDir  "txt"))
+           outdoorRears     (map (comp rearrange-vine (partial slurp-vine "outdoors")) 
+                                 (list-files outdoorDir "txt")) ]
+       (println (count indoorRears) " indoors  " (count outdoorRears) " outdoors")
+       (println (centroid-maps (into clusterer (shuffle (concat indoorRears outdoorRears)))))
+    
+    ))
+
+
+
+
+
+
 (defn -main  [& args]
   (loop-process 100)
 
   )
+
+
+
+(def rearrange-vine   (fn [vine] (vector (:wavPrint vine) )))
+(def          clusterer         (decaying-kmeans-clusterer 2 [ :wav-fingerprint ]
+                                                           :centroidHalfLife 600 :centroidCapacity 2000 :maxLoops 5))
+
+(def       indoorDir        (str (path) "\\" (:opDir cfg) "\\indoorpets"))
+(def       outdoorDir       (str (path) "\\" (:opDir cfg) "\\outdoors"))
+(def      indoorRears      (map (comp rearrange-vine (partial slurp-vine  "indoorpets"))
+                                (list-files indoorDir  "txt")))
+(def      outdoorRears     (map (comp rearrange-vine (partial slurp-vine "outdoors")) 
+                                (list-files outdoorDir "txt")) )
+
+
+

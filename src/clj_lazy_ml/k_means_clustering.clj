@@ -9,26 +9,39 @@
 
 ;"typeVec types
 ;  :double   
-;  any collection
-; :wav-fingerprint
-; :RGB
+;  vectors of nominal values
+;  :wav-fingerprint
+;  :RGB
+;  :ignore
 
 ;---- normalizing stuff
-	(defn- update-minMax  [ minMax  newVec ]
+	(defn- update-minMax  [typeVec minMax  newVec ]
 	  "stores min and max values encountered so far"
 	  (if minMax
-	    {:max (mapv max (minMax :max) newVec) :min (mapv min (minMax :min) newVec)}
-	    {:max newVec :min newVec} ))
+	    {:max (vec (map (fn [type currentMax possibleMax] 
+                       (cond 
+                         (= type :double) (max currentMax possibleMax) 
+                         :else 0)) 
+                     typeVec (minMax :max) newVec))
+         
+         :min (vec (map (fn [type currentMin possibleMin] 
+                   (cond 
+                     (= type :double) (min currentMin possibleMin) 
+                     :else 0)) typeVec (minMax :min) newVec))
+	    }
+       {:max (vec (repeat (count newVec) 0))
+        :min (vec (repeat (count newVec) 0))}
+     ))
 	
 	(defn- normalize  [ typeVec minMax  vec]
-	  "scales numerics inbetween min-max on scale of 0 to 1, nothing to nominals"
+	  "scales numerics inbetween min-max on scale of 0 to 1, nothing to nominals" ;any transform from raw
 	  (mapv (fn [type minVal maxVal  val] 
-	              (cond 
+	              (cond
 	                (coll? type)               val
                     (= type :wav-fingerprint)  val
                     (= type :RGB)              val
 	                (= type :double)  (if (= minVal maxVal) 0.5 (/ (- val minVal) (- maxVal minVal))) 
-	                
+                    
                     :else 0.25))
 	            typeVec (:min minMax) (:max minMax) vec)  )
 	
@@ -178,7 +191,7 @@
   (cons  [this rawX]
     (let [newTypeVec     (update-typeVec typeVec rawX)
           newVec         (rawX-to-doubles typeVec rawX)
-          minMax         (update-minMax minMax  newVec)
+          minMax         (update-minMax typeVec minMax  newVec)
           toProcess      (conj toProcess  (normalize typeVec minMax newVec)) ]
       (if (>= countDown 0) ;just add a point
         (DecayingKMeansClusterer. k newTypeVec getDistance 
@@ -195,7 +208,6 @@
   (empty [this]      (DecayingKMeansClusterer. k typeVec getDistance nil resetInterval (+ resetInterval k) nil '() options))
   (equiv [this that] (.equiv seq that))
   clojure.lang.Sequential)
-
 
 
   (defn decaying-kmeans-clusterer 
