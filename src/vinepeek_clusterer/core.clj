@@ -138,7 +138,7 @@
        (println (count indoorRears) " indoors  " (count outdoorRears) " outdoors")
        (println (centroid-maps (into clusterer (shuffle (concat indoorRears outdoorRears)))))
     
-    ))
+    )
 
 
 
