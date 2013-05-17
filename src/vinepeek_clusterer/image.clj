@@ -5,21 +5,44 @@
   )
 
 
-(defn- avg-color [png]
+(defn scale-down [png newDim]
+  "png path and squard dim to list of [r g b]"
   (when (.exists (as-file png))
     (let [ img  (javax.imageio.ImageIO/read (as-file png))
-           simg (new BufferedImage 1 1 (.getType img))
+           simg (new BufferedImage newDim newDim (.getType img))
            g    (.createGraphics simg) ]
-	    (.drawImage g img 0 0 1 1 nil)
+	    (.drawImage g img 0 0 newDim newDim nil)
 	    (.dispose g)
-	    (new Color (.getRGB simg 0 0))
+        (for [x (range newDim)
+              y (range newDim)]
+          (let [color (new Color (.getRGB simg x y))]
+            (vector (.getRed color) (.getGreen color) (.getBlue color)))
+          )
 	        )))
 
+     (defn color-diff-score [c1 c2]
+      (Math/abs (/
+         (apply + (map - c1 c2))
+         (double (* 3 255))) )
+        )
 
-(defn process-image [png]
-  (let [ avgColor (avg-color png)]
-    [(.getRed avgColor)
-     (.getGreen avgColor)
-     (.getBlue avgColor)
-     ]
+(defn img-sim-score [colors1 colors2]
+  "0 for same, 1 for opposite"
+  (/ 
+    (apply + (map color-diff-score colors1 colors2))
+    (count colors1)
   ))
+
+
+(defn invert-rows [grid]
+  "flip rows into lists of column values also magically O(1)?"
+   (apply mapv vector  grid))
+
+(defn avg-colors [& colors]
+  (mapv (fn [rgbs] 
+         (mapv (fn [cs] 
+                (/ (apply + cs) 
+                   (double (count cs))))
+              (invert-rows rgbs) ))
+        (invert-rows colors))
+  )

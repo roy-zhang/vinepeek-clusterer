@@ -30,6 +30,22 @@
           (FingerprintSimilarityComputer. (vec-to-byte-array fp1) (vec-to-byte-array fp2)))
       ))
 
+    
+    (defn avg-wav-fingerprint [simFunc & fingerprints]
+      "since blending sound seems non-trivial, 
+   this will just return the fingerprint with the most similarity to all the others"
+      
+      (apply (partial max-key 
+                      (fn [fprint] (apply + (map #(simFunc fprint %) fingerprints))))
+             fingerprints)
+      )
+    
+    (defn avg-wav-fingerprint-2 [& fingerprints]
+      ""
+      (let [somefp (rand-nth fingerprints)]
+        (reduce (fn [fp1 fp2] (if (> (similarity somefp fp1) (similarity somefp fp2)) fp1 fp2))  fingerprints)
+        )
+      )
 
 (defn image-wav-normalized [wav jpg]
   ""

@@ -2,6 +2,8 @@
   (:require [clojure.core.reducers :as r])
   (:use [plumbing.core]))
 
+(defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=" x#) x#))
+
 (defn invert-rows [grid]
   "flip rows into lists of column values also magically O(1)?"
    (apply map list  grid))
