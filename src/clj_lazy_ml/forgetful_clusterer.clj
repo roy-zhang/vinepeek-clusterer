@@ -29,8 +29,7 @@
     
     (defn threshold-pair [{cm :centroidMaps thresh :threshold dist :distanceFunc}]
       "first pair of centroids that are less than threshold apart"
-        (some (fn [[c1 c2]] (when (> thresh (dist c1 c2)) [c1 c2]))
-              (combinations (keys cm) 2)))
+        (some (fn [[c1 c2]] (when (> thresh (dist c1 c2)) [c1 c2]))   (combinations (keys cm) 2)))
     
     (defn recluster [{dist :distanceFunc avg :avgFunc cm :centroidMaps opts :options :as fgcl}]
       ""
@@ -50,16 +49,15 @@
               centroid (replace-list  (:decay-list opts)  seqs)) )))
     
     (defn merge-cm [{avg :avgFunc cm :centroidMaps :as fgcl} c1 c2]
-      (let [small   (min (count (cm c1)) (count (cm c2))) 
-            merged  (concat (interleave (cm c1) (cm c2)) (drop small (cm c1)) (drop small (cm c2)))]
+      (let [small   (min (count (cm c1)) (count (cm c2))) ]
         (assoc fgcl :centroidMaps
-               (->  cm
+               (-> cm
                  (assoc  (avg c1 c2) (concat (interleave (cm c1) (cm c2)) (drop small (cm c1)) (drop small (cm c2))))
                  (dissoc c1)
                  (dissoc c2)
                  )
       )))
-    
+      
     (defn add-point [{dist :distanceFunc thresh :threshold cm :centroidMaps opts :options :as fgcl} newPoint]
       " get new point       get closest centroid        add to that group        adjust centroid
         check whether any centorids are within threshold, recluster
@@ -70,13 +68,14 @@
              (assoc-in fgcl [:centroidMaps newPoint] (conj (:decay-list (:options fgcl)) newPoint)) ;add new centroid
              
          (let [ addedfgcl   (adjust-cm fgcl nearest newPoint) ]
-           (if-let [[c1 c2] (threshold-pair addedfgcl)]
-             (recluster (merge-cm fgcl c1 c2))
-              addedfgcl
-             )
-            ))))
+           (if-not (threshold-pair addedfgcl) addedfgcl
+	           (loop [ cl (recluster addedfgcl) ]
+	                (if-let [[c1 c2] (threshold-pair fgcl)]
+	                  (recur (recluster (merge-cm fgcl c1 c2)))
+	                  cl)))
+             ))))
     
-    (defn add-points [fgcl points]    (recluster (reduce add-point fgcl points)))
+    (defn add-points [fgcl points]      (reduce add-point fgcl points))
     
     (defn centroids [fgcl] (keys (:centroidMaps fgcl)))
     
@@ -107,8 +106,10 @@
       ;----------------------------------------------------------------
       
       ;example usage, where points are assumed to be a sequence of doubles
+	    
       
       (defn distanceFunc-doubles  [ ^doubles point1 ^doubles point2] 
+  
             (sum (map #(* (- %1 %2) (- %1 %2)) 
                       point1
                       point2))
@@ -119,11 +120,11 @@
 
       
    ;(def exampleCl (forgetful-clusterer 
-    ;                                distanceFunc-doubles
+     ;                               distanceFunc-doubles
      ;                               averageFunc-doubles
      ;                               200
      ;                               :maxClusters 10 
-     ;                              :centroidHalflife 50 
+     ;                               :centroidHalflife 50 
      ;                               :centroidCapacity 200 )
    
    ;(centroids (add-points exampleCl '([13 13] [51 15] [25 63]))
@@ -131,3 +132,4 @@
       
   
  
+   

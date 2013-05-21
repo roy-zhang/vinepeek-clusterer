@@ -10,7 +10,8 @@
             [vine-parse :as v ]
             [image      :as i ]
             [wav        :as w ]
-            [clustering :as ml]]
+            [clustering :as ml]
+            [firstnames :as g ]]
        )
     (:import (java.io File)
            (java.net URL URI)))
@@ -52,7 +53,7 @@
                            :wav      wavPath
                            :spectrum spectrumPath
                            :image1   image1Path
-                           :image2   image2Path })
+                           :image2   image2Path})
        (assoc :image1 (i/scale-down image1Path 10))
 	    )))
  
@@ -60,7 +61,18 @@
   (->> (c/get-current-vine)
     (v/modify-vine)
     (extract-images-and-wav )
+    (delete-files)
     ))
+ 
+ (defn delete-files [vine]
+   	  (let [opPath       (str (path) "\\" (:opDir cfg) "\\")
+	        idPath       (str opPath (:id vine))
+            image3Path   (str idPath "_snap3.png")
+            image4Path   (str idPath "_snap4.png")
+            ]
+   (map #(io/delete-file % true) (concat (vals (:localPath vine)) (list image3Path image4Path )))
+   )
+      vine)
 
 ;de/serializing
   (defn spit-vine [vine]
@@ -84,7 +96,7 @@
 
 (defn loop-vine-retention  [times]
   "just downloads a new vine every 3 seconds and extracts fingerprint"
-  (let [clusterer (atom (ml/setup-both-clusterer))]
+  (let [clusterer (atom (ml/setup-all-clusterer))]
     (dotimes [n times]
       (try 
       (do (. Thread (sleep 3000))
