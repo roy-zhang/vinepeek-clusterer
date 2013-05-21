@@ -1,7 +1,7 @@
 (ns vinepeek-clusterer.core
   (:use 
     [clojure.pprint]
-    [clojure.java.io :as io]
+    [clojure.java.io]
     [clojure.set]
     [clj-lazy-ml.forgetful-clusterer]
     [clojure.data.json :only [write-str read-str]]
@@ -57,6 +57,18 @@
        (assoc :image1 (i/scale-down image1Path 10))
 	    )))
  
+ (defn delete-files [vine]
+   	  (let [opPath       (str (path) "\\" (:opDir cfg) "\\")
+	        idPath       (str opPath (:id vine))
+            image3Path   (str idPath "_snap3.png")
+            image4Path   (str idPath "_snap4.png")
+            ]
+        (doall
+          (for [filename (concat (vals (:localPath vine)) (list image3Path image4Path ))]
+            (io/delete-file filename true))))
+      (dissoc vine :localPath))
+
+
  (defn get-vine []
   (->> (c/get-current-vine)
     (v/modify-vine)
@@ -64,15 +76,7 @@
     (delete-files)
     ))
  
- (defn delete-files [vine]
-   	  (let [opPath       (str (path) "\\" (:opDir cfg) "\\")
-	        idPath       (str opPath (:id vine))
-            image3Path   (str idPath "_snap3.png")
-            image4Path   (str idPath "_snap4.png")
-            ]
-   (map #(io/delete-file % true) (concat (vals (:localPath vine)) (list image3Path image4Path )))
-   )
-      vine)
+
 
 ;de/serializing
   (defn spit-vine [vine]

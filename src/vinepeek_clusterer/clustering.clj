@@ -3,7 +3,7 @@
         [vinepeek-clusterer
          [wav :as w]
          [image :as i]
-         [firstnames :as g]]
+        ]
        ))
 
 

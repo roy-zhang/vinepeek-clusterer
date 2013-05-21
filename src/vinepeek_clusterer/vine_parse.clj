@@ -1,6 +1,7 @@
 (ns vinepeek-clusterer.vine-parse
   (:use vinepeek-clusterer.util
-        [clj-time core format]))
+        [clj-time core format]
+        [vinepeek-clusterer.firstnames]))
 
 (defn- filter-vine [vineMap]
   (reduce dissoc-in vineMap 
@@ -92,6 +93,7 @@
 	  (-> vineMap
 	    (assoc :local_hour (hours-local-time vineMap))
 	    (assoc-in [:profile :weeks_old] (profile-age-in-weeks vineMap))
+        (assoc-in [:profile :female?]   (female? (:name (:profile vineMap))))
         (remove-url-from-text)
 	  ))
 
