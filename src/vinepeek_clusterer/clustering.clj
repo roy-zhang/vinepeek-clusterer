@@ -49,6 +49,15 @@
 			    ffirst
 			    ))
    
+	   (defn gender-diff [v1 v2]
+	    (let [v1g (:female?  (:profile v1))
+	          v2g (:female?  (:profile v2))]
+	      (cond
+	        (or (= "?" v1g) (= "?" v2g)) 0.5
+	        (= v1g v2g) 0.0
+	        :else 1.0)))
+   
+   
 (defn setup-info-clusterer []
   "just looks at img similarity for each vine"
   (let [ weeks_old_NF        (normalizerFunc)
@@ -58,6 +67,7 @@
                            (+  (Math/abs (- (weeks_old_NF       (:weeks_old       (:profile v1))) (weeks_old_NF       (:weeks_old       (:profile v2)))))
                                (Math/abs (- (followers_count_NF (:followers_count (:profile v1))) (followers_count_NF (:followers_count (:profile v2)))))
                                (Math/abs (- (statuses_count_NF  (:statuses_count  (:profile v1))) (statuses_count_NF  (:statuses_count  (:profile v2)))))
+                               (gender-diff v1 v2)
                                (if (= (:lang v1) (:lang v2)) 0.0 1.0)
                                (/ (Math/abs (- (:local_hour v1) (:local_hour v2))) 24.0)
                                ))
@@ -68,6 +78,7 @@
                                          :followers_count (avg-of-keyword vines :profile :followers_count)
                                          :statuses_count  (avg-of-keyword vines :profile :statuses_count)
                                          :lang            (most-frequent (map (comp :lang :profile) vines))
+                                         :female?         (most-frequent (map (comp :female? :profile) vines))
                                          }})
                           0.1
                           :maxClusters 2 :centroidCapacity 1000 :centroidHalfLife 1000)
@@ -82,22 +93,24 @@
          followers_count_NF  (normalizerFunc)
          statuses_count_NF   (normalizerFunc)        ]
   (ml/forgetful-clusterer (fn [v1 v2]                             
-                           (+  ;(w/similarity   (:wavPrint v1) (:wavPrint v2))
+                           (+  (w/similarity   (:wavPrint v1) (:wavPrint v2))
                                (i/img-sim-score (:image1 v1) (:image1 v2))
                                (Math/abs (- (weeks_old_NF       (:weeks_old       (:profile v1))) (weeks_old_NF       (:weeks_old       (:profile v2)))))
                                (Math/abs (- (followers_count_NF (:followers_count (:profile v1))) (followers_count_NF (:followers_count (:profile v2)))))
                                (Math/abs (- (statuses_count_NF  (:statuses_count  (:profile v1))) (statuses_count_NF  (:statuses_count  (:profile v2)))))
+                               (gender-diff v1 v2)
                                (if (= (:lang v1) (:lang v2)) 0.0 1.0)
                                (/ (Math/abs (- (:local_hour v1) (:local_hour v2))) 24.0)
                                ))
                           (fn [& vines] 
                             {:image1          (apply i/avg-colors (map :image1 vines))
-                            ; :wavPrint        (apply w/avg-wav-fingerprint-2 (map :wavPrint vines))
+                             :wavPrint        (apply w/avg-wav-fingerprint-2 (map :wavPrint vines))
                              :profile   {
                                          :weeks_old       (avg-of-keyword vines :profile :weeks_old)
                                          :followers_count (avg-of-keyword vines :profile :followers_count)
                                          :statuses_count  (avg-of-keyword vines :profile :statuses_count)
                                          :lang            (most-frequent (map (comp :lang :profile) vines))
+                                         :female?         (most-frequent (map (comp :female? :profile) vines))
                                          }
                               :local_hour      (avg-of-keyword vines  :local_hour)
                              }
