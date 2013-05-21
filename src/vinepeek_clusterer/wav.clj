@@ -25,11 +25,13 @@
           )
     
     (defn similarity [fp1 fp2]
+      (->
       (.getSimilarity 
         (.getFingerprintsSimilarity 
-          (FingerprintSimilarityComputer. (vec-to-byte-array fp1) (vec-to-byte-array fp2)))
+          (FingerprintSimilarityComputer. (vec-to-byte-array fp1) (vec-to-byte-array fp2))))
+       (Math/log)
+       (- )
       ))
-
     
     (defn avg-wav-fingerprint [simFunc & fingerprints]
       "since blending sound seems non-trivial, 

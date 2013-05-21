@@ -20,6 +20,14 @@
     (take n)
     (map first)))
 
+(defn most-frequent [n items]
+  (->> items
+    frequencies-fast
+    (sort-by val)
+    reverse
+    ffirst
+    ))
+
 (defn pgroup-by [f coll] 
   "parallel group-by" 
   (r/fold   (fn ([] {})  

@@ -1,5 +1,6 @@
 (ns vinepeek-clusterer.core
   (:use 
+    [clojure.pprint]
     [clojure.java.io :as io]
     [clojure.set]
     [clj-lazy-ml.forgetful-clusterer]
@@ -60,71 +61,71 @@
     (v/modify-vine)
     (extract-images-and-wav )
     ))
- 
- 
-
-
 
 ;de/serializing
   (defn spit-vine [vine]
     (let [newPath   (str (path) "\\" (:opDir cfg) "\\" (:id vine) ".txt")]
       (spit newPath (write-str vine)) vine ))
   
+
+	  (defn- keyword-the-keys [map]
+	    (into {} (for [[k v] map]
+	      {(keyword k) v})))
+
   (defn slurp-vine
     "deserializes txt file in op folder"
     ([txtPath]
       (let [path       (str (path) "\\" (:opDir cfg) "\\" txtPath)
             jsoned     (read-str (slurp path))]
-        (into {} (for [[k v] jsoned] { (keyword k) v}))))
+          (update-in (keyword-the-keys jsoned) [:profile] keyword-the-keys)))
     ([subFolder txtPath]
       (slurp-vine (str subFolder "\\" txtPath)))
     )
-    
-
 
 (defn loop-vine-retention  [times]
   "just downloads a new vine every 3 seconds and extracts fingerprint"
+  (let [clusterer (atom (ml/setup-both-clusterer))]
     (dotimes [n times]
       (try 
       (do (. Thread (sleep 3000))
-        (c/get-current-vine)
-             
+        (->> (get-vine)
+           (swap! clusterer add-point )
+           (centroids)
+           (map #(dissoc % :wavPrint))
+           (map #(dissoc % :image1))
+           (map #(dissoc % :localPath))    
+           (pprint)
+             )
           )
       (catch Exception e "")
-      )))
-   
+      ))))
 
-
-(defn just-wav-experiment []
-"get 2 groups of vines
- shuffle then cluster into 2 groups 
- check how many were grouped incorrectly
- get new vines, and attempt to catch similar into clusters"
-
-(let 
-  [outdoorsVines   (map (partial slurp-vine "outdoors") 
+(defn experiment 
+  "runs clusterer through presorted indoors/outdoor vines"
+  ([clusterer]
+  (let [outdoorsVines   (map (partial slurp-vine "outdoors") 
                         (list-files (str (path) "\\" (:opDir cfg) "\\" "outdoors") "txt"))
-   indoorpetsVines (map (partial slurp-vine "indoorpets") 
-                        (list-files (str (path) "\\" (:opDir cfg) "\\" "indoorpets") "txt"))
-   clustered       (add-points
-                     (ml/setup-just-fingerprint-clusterer)
-                     (shuffle (concat outdoorsVines indoorpetsVines)))
-   cluster1        (seq (first  (vals (:centroidMaps clustered))))
-   cluster2        (seq (second (vals (:centroidMaps clustered))))
-   
-   outdoorsCount   (max (count (intersection (set cluster1) (set outdoorsVines))) 
-                        (count (intersection (set cluster2) (set outdoorsVines))))
-   indoorsCount    (max (count (intersection (set cluster1) (set indoorpetsVines))) 
-                        (count (intersection (set cluster2) (set indoorpetsVines))))
- 
-   ]
- (println outdoorsCount "/" (count outdoorsVines) " outdoors together")
- (println indoorsCount "/" (count indoorpetsVines) " indoors together")
- 
-  
-
+        indoorpetsVines (map (partial slurp-vine "indoorpets") 
+                             (list-files (str (path) "\\" (:opDir cfg) "\\" "indoorpets") "txt"))
+        clustered       (add-points
+                          clusterer
+                          (shuffle (concat outdoorsVines indoorpetsVines)))
+        cluster1        (seq (first  (vals (:centroidMaps clustered))))
+        cluster2        (seq (second (vals (:centroidMaps clustered))))
+        
+        outdoorsCount   (max (count (intersection (set cluster1) (set outdoorsVines))) 
+                             (count (intersection (set cluster2) (set outdoorsVines))))
+        indoorsCount    (max (count (intersection (set cluster1) (set indoorpetsVines))) 
+                             (count (intersection (set cluster2) (set indoorpetsVines))))   ]
+ (println outdoorsCount "/" (count outdoorsVines) " outdoors together" "          "
+          indoorsCount "/" (count indoorpetsVines) " indoors together")
   ))
-
+  ([clusterer trials]
+    (let [averages (map (fn [list] (/ (apply + list) (double (count list))))
+                      (invert-rows  (take trials (repeatedly (experiment clusterer)))))]
+     (println (first averages)  " outdoors together")
+     (println (second averages) " indoors together")
+  )))
 
 
 
@@ -134,50 +135,6 @@
                      (-> vine
                        (assoc :image1 (i/scale-down ((:localPath vine) "image1") newDim)))))
   ))
-
-
-
-(defn just-img-experiment []
-"get 2 groups of vines
- shuffle then cluster into 2 groups 
- check how many were grouped incorrectly
- get new vines, and attempt to catch similar into clusters"
-
-(let 
-  [outdoorsVines   (map (partial slurp-vine "outdoors") 
-                        (list-files (str (path) "\\" (:opDir cfg) "\\" "outdoors") "txt"))
-   indoorpetsVines (map (partial slurp-vine "indoorpets") 
-                        (list-files (str (path) "\\" (:opDir cfg) "\\" "indoorpets") "txt"))
-   clustered       (add-points
-                     (ml/setup-just-img-clusterer)
-                     (shuffle (concat outdoorsVines indoorpetsVines)))
-   cluster1        (seq (first  (vals (:centroidMaps clustered))))
-   cluster2        (seq (second (vals (:centroidMaps clustered))))
-   
-   outdoorsCount   (max (count (intersection (set cluster1) (set outdoorsVines))) 
-                        (count (intersection (set cluster2) (set outdoorsVines))))
-   indoorsCount    (max (count (intersection (set cluster1) (set indoorpetsVines))) 
-                        (count (intersection (set cluster2) (set indoorpetsVines))))
- 
-   ]
- (println outdoorsCount "/" (count outdoorsVines) " outdoors together" "   ||   "
-            indoorsCount "/" (count indoorpetsVines) " indoors together")
- [outdoorsCount indoorsCount]
-  
-
-  ))
-
-
-(defn repeat-just-img-experiment [trials]
-  (let [averages (map (fn [list] (/ (apply + list) (double (count list))))
-                      (invert-rows  (take trials (repeatedly just-img-experiment))))]
-    
-     (println (first averages)  " outdoors together")
-     (println (second averages) " indoors together")
-  ))
-
-
-
 
 
 (defn -main  [& args]

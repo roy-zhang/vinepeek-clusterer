@@ -29,7 +29,8 @@
     
     (defn threshold-pair [{cm :centroidMaps thresh :threshold dist :distanceFunc}]
       "first pair of centroids that are less than threshold apart"
-        (some (fn [[c1 c2]] (when (> thresh (dist c1 c2)) [c1 c2]))   (combinations (keys cm) 2)))
+        (some (fn [[c1 c2]] (when (> thresh (dist c1 c2)) [c1 c2]))
+              (combinations (keys cm) 2)))
     
     (defn recluster [{dist :distanceFunc avg :avgFunc cm :centroidMaps opts :options :as fgcl}]
       ""
@@ -73,7 +74,7 @@
              (recluster (merge-cm fgcl c1 c2))
               addedfgcl
              )
-             ))))
+            ))))
     
     (defn add-points [fgcl points]    (recluster (reduce add-point fgcl points)))
     
