@@ -21,7 +21,7 @@
 (defn path []  (. (java.io.File. ".") getCanonicalPath))
   
 (defn copy-file [source-path dest-path]
-  (io/copy (io/file source-path) (io/file dest-path)))
+  (copy (file source-path) (file dest-path)))
 
   (defn list-files
     ([path] 
@@ -65,7 +65,7 @@
             ]
         (doall
           (for [filename (concat (vals (:localPath vine)) (list image3Path image4Path ))]
-            (io/delete-file filename true))))
+            (delete-file filename true))))
       (dissoc vine :localPath))
 
 
@@ -142,6 +142,48 @@
      (println (first averages)  " outdoors together")
      (println (second averages) " indoors together")
   )))
+
+     (defn print-presentables [centroidMaps]
+       (println (count centroidMaps) " clusters")
+       
+       (for [[centroid trainingPoints] centroidMaps]
+         (do 
+	         (println "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+	         
+	         (println "average centroid" )
+	         (pprint (-> centroid (dissoc :image1) (dissoc :wavPrint)))
+	         (println)
+	         
+	         (println "3 samples ")
+	         (for [vine  (take 3 (repeatedly (rand-nth (seq trainingPoints)))) ]
+	           (map println (list
+	                          (:video_url vine)
+	                          (:text (:tweet vine))
+	                          (:name (:profile vine))
+	                          (case (:female? (:profile vine))
+	                            true "female"
+	                            false "male"
+	                            "?"   "?")
+	                          (:description (:profile vine))
+	         )))   )))
+
+;get avg fingerprint, find 4 url of closestest matching
+     
+     
+     
+(defn get-centroids 
+  "runs clusterer through presorted indoors/outdoor vines"
+  ([clusterer]
+  (let [outdoorsVines   (map (partial slurp-vine "outdoors") 
+                        (list-files (str (path) "\\" (:opDir cfg) "\\" "outdoors") "txt"))
+        indoorpetsVines (map (partial slurp-vine "indoorpets") 
+                             (list-files (str (path) "\\" (:opDir cfg) "\\" "indoorpets") "txt"))
+        clustered       (add-points
+                          clusterer
+                          (shuffle (concat outdoorsVines indoorpetsVines)))   ]
+    (print-presentables (:centroidMaps clustered))
+  )))
+
 
 
 
