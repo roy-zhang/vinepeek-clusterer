@@ -126,8 +126,7 @@
      (println (first averages)  " outdoors together")
      (println (second averages) " indoors together")
   )))
- 
-<<<<<<< HEAD
+
      (defn print-clusterer [{cm :centroidMaps avg :avgFunc}]
          (println (count cm) " clusters")
          (println "average point so far")
@@ -165,31 +164,6 @@
       (catch Exception e "")
       ))))
 	         
-=======
-     (defn print-presentables [centroidMaps]
-       (println (count centroidMaps) " clusters")
-       
-       (for [[centroid trainingPoints] centroidMaps]
-         (do 
-	         (println "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-	         
-	         (println "average centroid" )
-	         (pprint (-> centroid (dissoc :image1) (dissoc :wavPrint)))
-	         (println)
-	         
-	         (println "3 samples ")
-	         (for [vine  (take 3 (repeatedly (rand-nth (seq trainingPoints)))) ]
-	           (map println (list
-	                          (:video_url vine)
-	                          (:text (:tweet vine))
-	                          (:name (:profile vine))
-	                          (case (:female? (:profile vine))
-	                            true "female"
-	                            false "male"
-	                            "?"   "?")
-	                          (:description (:profile vine))
-	         )))   )))
->>>>>>> 7ef0b09802e09cf58ba1ac7ca11dfef66ee86a02
 
 ;get avg fingerprint, find 4 url of closestest matching
      
@@ -205,53 +179,7 @@
         clustered       (add-points
                           clusterer
                           (shuffle (concat outdoorsVines indoorpetsVines)))   ]
-<<<<<<< HEAD
     (print-clusterer clustered)
-=======
-    (print-presentables (:centroidMaps clustered))
->>>>>>> 7ef0b09802e09cf58ba1ac7ca11dfef66ee86a02
-  )))
-
-
-     (defn print-presentables [centroidMaps]
-       (println (count centroidMaps) " clusters")
-       
-       (for [[centroid trainingPoints] centroidMaps]
-         (do 
-	         (println "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-	         
-	         (println "average centroid" )
-	         (pprint (-> centroid (dissoc :image1) (dissoc :wavPrint)))
-	         (println)
-	         
-	         (println "3 samples ")
-	         (for [vine  (take 3 (repeatedly (rand-nth (seq trainingPoints)))) ]
-	           (map println (list
-	                          (:video_url vine)
-	                          (:text (:tweet vine))
-	                          (:name (:profile vine))
-	                          (case (:female? (:profile vine))
-	                            true "female"
-	                            false "male"
-	                            "?"   "?")
-	                          (:description (:profile vine))
-	         )))   )))
-
-;get avg fingerprint, find 4 url of closestest matching
-     
-     
-     
-(defn get-centroids 
-  "runs clusterer through presorted indoors/outdoor vines"
-  ([clusterer]
-  (let [outdoorsVines   (map (partial slurp-vine "outdoors") 
-                        (list-files (str (path) "\\" (:opDir cfg) "\\" "outdoors") "txt"))
-        indoorpetsVines (map (partial slurp-vine "indoorpets") 
-                             (list-files (str (path) "\\" (:opDir cfg) "\\" "indoorpets") "txt"))
-        clustered       (add-points
-                          clusterer
-                          (shuffle (concat outdoorsVines indoorpetsVines)))   ]
-    (print-presentables (:centroidMaps clustered))
   )))
 
 
