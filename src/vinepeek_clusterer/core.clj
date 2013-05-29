@@ -13,7 +13,7 @@
             [clustering :as ml]
             [firstnames :as g ]]
        )
-    (:import (java.io File)
+    (:import (java.io File StringWriter)
            (java.net URL URI)))
 
 (def cfg { :opDir "op"})
@@ -151,7 +151,53 @@
                               ))
                           
                   cm)))
+     
+     (defn toString [m] 
+       "http://stackoverflow.com/questions/4555496/how-can-i-pretty-print-a-persistenthashmap-in-clojure-to-a-string"
+       (let [w (StringWriter.)] (pprint m w)(.toString w)))
+     
+     (defn- str-ln [& strings]
+       (clojure.string/join "\n" strings))
+     
+     (defn- join-map [fn coll]
+       (clojure.string/join "\n" (doall (map fn coll) )))
+     
+     (defn clusterer-report [{cm :centroidMaps avg :avgFunc}]
+         (str-ln 
+           "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
+             (str (count cm) " clusters" )
+             "--"
+             "cluster sizes:"
+             (clojure.string/join "\n" (map count (vals cm)))
+             "--"
+             (join-map
+               (fn [[centroid trainingPoints]]
+                    (str-ln ""
+                        "==centroid==" 
+                        (toString  (:profile (-> centroid (dissoc :image1) (dissoc :wavPrint))))
+                        (let [samples (take (min 10 (count trainingPoints))
+                                               (repeatedly #(rand-nth (seq trainingPoints))))]
+                          (str-ln
+                              "      ++url++"
+                              (join-map :video_url samples)
+                              "      ++tweet++"
+                              (join-map (comp :text :tweet) samples)
+                              "      ++self description++"
+                              (join-map (comp :description :profile) samples)
+                              "      ++location++"
+                              (join-map (comp :location :profile) samples)
+                              ))
+                        ))         
+                  cm)))
 
+     
+     (defn spit-clusterer [clusterer filePath]
+       
+       
+       )
+     
+     
+     
  (defn loop-vine-retention  [times]
   "just downloads a new vine every 3 seconds and extracts fingerprint"
   (let [clusterer (atom (ml/setup-all-clusterer))]

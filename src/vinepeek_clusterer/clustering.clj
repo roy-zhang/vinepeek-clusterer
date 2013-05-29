@@ -1,4 +1,5 @@
 (ns vinepeek-clusterer.clustering
+  (:import java.io.StringWriter)
   (:use [clj-lazy-ml.forgetful-clusterer :as ml]
         [vinepeek-clusterer
          [wav :as w]
