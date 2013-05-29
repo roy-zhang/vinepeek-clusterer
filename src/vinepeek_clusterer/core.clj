@@ -21,7 +21,7 @@
 (defn path []  (. (java.io.File. ".") getCanonicalPath))
   
 (defn copy-file [source-path dest-path]
-  (io/copy (io/file source-path) (io/file dest-path)))
+  (copy (file source-path) (file dest-path)))
 
   (defn list-files
     ([path] 
@@ -65,7 +65,7 @@
             ]
         (doall
           (for [filename (concat (vals (:localPath vine)) (list image3Path image4Path ))]
-            (io/delete-file filename true))))
+            (delete-file filename true))))
       (dissoc vine :localPath))
 
 
@@ -98,23 +98,7 @@
       (slurp-vine (str subFolder "\\" txtPath)))
     )
 
-(defn loop-vine-retention  [times]
-  "just downloads a new vine every 3 seconds and extracts fingerprint"
-  (let [clusterer (atom (ml/setup-all-clusterer))]
-    (dotimes [n times]
-      (try 
-      (do (. Thread (sleep 3000))
-        (->> (get-vine)
-           (swap! clusterer add-point )
-           (centroids)
-           (map #(dissoc % :wavPrint))
-           (map #(dissoc % :image1))
-           (map #(dissoc % :localPath))    
-           (pprint)
-             )
-          )
-      (catch Exception e "")
-      ))))
+
 
 (defn experiment 
   "runs clusterer through presorted indoors/outdoor vines"
@@ -142,6 +126,92 @@
      (println (first averages)  " outdoors together")
      (println (second averages) " indoors together")
   )))
+ 
+<<<<<<< HEAD
+     (defn print-clusterer [{cm :centroidMaps avg :avgFunc}]
+         (println (count cm) " clusters")
+         (println "average point so far")
+         (pprint (-> (apply avg (keys cm)) (dissoc :image1) (dissoc :wavPrint)))
+              (println "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+              (doall (map (fn [[centroid trainingPoints]]
+                            (println "")
+                            (println "==centroid==" )
+                            (pprint  (:profile (-> centroid (dissoc :image1) (dissoc :wavPrint))))
+                        
+                            (let [samples (take (min 10 (count trainingPoints))
+                                               (repeatedly #(rand-nth (seq trainingPoints))))]
+                              (println "      ++urls++")
+                              (doall (map #(println (:video_url  %)) samples))
+                              (println "      ++tweet++")
+                              (doall (map #(println (:text (:tweet %))) samples))
+                              (println "      ++self description++")
+                              (doall (map #(println (:description (:profile %))) samples))
+                              (println "      ++location++")
+                              (doall (map #(println (:location (:profile %))) samples))
+                              
+                              ))
+                          
+                  cm)))
+
+ (defn loop-vine-retention  [times]
+  "just downloads a new vine every 3 seconds and extracts fingerprint"
+  (let [clusterer (atom (ml/setup-all-clusterer))]
+    (dotimes [n times]
+      (try 
+      (do (. Thread (sleep 3000))
+        (print-clusterer
+           (swap! clusterer add-point (get-vine))
+          ))
+      (catch Exception e "")
+      ))))
+	         
+=======
+     (defn print-presentables [centroidMaps]
+       (println (count centroidMaps) " clusters")
+       
+       (for [[centroid trainingPoints] centroidMaps]
+         (do 
+	         (println "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+	         
+	         (println "average centroid" )
+	         (pprint (-> centroid (dissoc :image1) (dissoc :wavPrint)))
+	         (println)
+	         
+	         (println "3 samples ")
+	         (for [vine  (take 3 (repeatedly (rand-nth (seq trainingPoints)))) ]
+	           (map println (list
+	                          (:video_url vine)
+	                          (:text (:tweet vine))
+	                          (:name (:profile vine))
+	                          (case (:female? (:profile vine))
+	                            true "female"
+	                            false "male"
+	                            "?"   "?")
+	                          (:description (:profile vine))
+	         )))   )))
+>>>>>>> 7ef0b09802e09cf58ba1ac7ca11dfef66ee86a02
+
+;get avg fingerprint, find 4 url of closestest matching
+     
+     
+     
+(defn get-centroids 
+  "runs clusterer through presorted indoors/outdoor vines"
+  ([clusterer]
+  (let [outdoorsVines   (map (partial slurp-vine "outdoors") 
+                        (list-files (str (path) "\\" (:opDir cfg) "\\" "outdoors") "txt"))
+        indoorpetsVines (map (partial slurp-vine "indoorpets") 
+                             (list-files (str (path) "\\" (:opDir cfg) "\\" "indoorpets") "txt"))
+        clustered       (add-points
+                          clusterer
+                          (shuffle (concat outdoorsVines indoorpetsVines)))   ]
+<<<<<<< HEAD
+    (print-clusterer clustered)
+=======
+    (print-presentables (:centroidMaps clustered))
+>>>>>>> 7ef0b09802e09cf58ba1ac7ca11dfef66ee86a02
+  )))
+
 
 
 

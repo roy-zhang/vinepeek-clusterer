@@ -75,7 +75,7 @@
 	                  cl)))
              ))))
     
-    (defn add-points [fgcl points]      (reduce add-point fgcl points))
+    (defn add-points [fgcl points]    (recluster  (reduce add-point fgcl points)))
     
     (defn centroids [fgcl] (keys (:centroidMaps fgcl)))
     
