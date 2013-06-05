@@ -35,8 +35,6 @@
     (r/map #(hash-map (f %) (list %))  
             (vec coll))  ))
 	
-(defn st []
-        (clojure.stacktrace/print-stack-trace *e))
   
 (defn shuff2 [nums]
      (map vector (shuffle (range nums)) (shuffle (range nums))))

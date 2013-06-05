@@ -1,5 +1,4 @@
 (ns vinepeek-clusterer.clustering
-  (:import java.io.StringWriter)
   (:use [clj-lazy-ml.forgetful-clusterer :as ml]
         [vinepeek-clusterer
          [wav :as w]
@@ -89,7 +88,7 @@
 (defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=" x#) x#))
      
 (defn setup-all-clusterer []
-  "just looks at img similarity for each vine"
+  "clusteres based on wavprint, image, weeks old, followers, tweets, gender, lang, local_time"
   (let [ weeks_old_NF        (normalizerFunc)
          followers_count_NF  (normalizerFunc)
          statuses_count_NF   (normalizerFunc)        ]

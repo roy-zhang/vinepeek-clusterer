@@ -3,7 +3,7 @@
 
 
 (def first-name-to-gender-map 
-  (let [csvPath (str (. (java.io.File. ".") getCanonicalPath) "\\" "firstnames.csv") ]
+  (let [csvPath (str (. (java.io.File. ".") getCanonicalPath) "/" "firstnames.csv") ]
     (into {} (map 
             (fn [namegen] (let [[first gender] (split namegen #",")] 
                             {(capitalize first) (= "F" gender)} ))

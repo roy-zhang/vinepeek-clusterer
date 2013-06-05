@@ -14,7 +14,9 @@
             [firstnames :as g ]]
        )
     (:import (java.io File StringWriter)
-           (java.net URL URI)))
+           (java.net URL URI))
+    (:gen-class)
+    )
 
 (def cfg { :opDir "op"})
 
@@ -34,7 +36,7 @@
   
 ;vine extraction
 	(defn- extract-images-and-wav [vine]
-	  (let [opPath       (str (path) "\\" (:opDir cfg) "\\")
+	  (let [opPath       (str (path) "/" (:opDir cfg) "/")
 	        idPath       (str opPath (:id vine))
 	        videoPath    (str idPath ".mp4" )
 	        wavPath      (str idPath ".wav")
@@ -58,7 +60,7 @@
 	    )))
  
  (defn delete-files [vine]
-   	  (let [opPath       (str (path) "\\" (:opDir cfg) "\\")
+   	  (let [opPath       (str (path) "/" (:opDir cfg) "/")
 	        idPath       (str opPath (:id vine))
             image3Path   (str idPath "_snap3.png")
             image4Path   (str idPath "_snap4.png")
@@ -80,7 +82,7 @@
 
 ;de/serializing
   (defn spit-vine [vine]
-    (let [newPath   (str (path) "\\" (:opDir cfg) "\\" (:id vine) ".txt")]
+    (let [newPath   (str (path) "/" (:opDir cfg) "/" (:id vine) ".txt")]
       (spit newPath (write-str vine)) vine ))
   
 
@@ -91,11 +93,11 @@
   (defn slurp-vine
     "deserializes txt file in op folder"
     ([txtPath]
-      (let [path       (str (path) "\\" (:opDir cfg) "\\" txtPath)
+      (let [path       (str (path) "/" (:opDir cfg) "/" txtPath)
             jsoned     (read-str (slurp path))]
           (update-in (keyword-the-keys jsoned) [:profile] keyword-the-keys)))
     ([subFolder txtPath]
-      (slurp-vine (str subFolder "\\" txtPath)))
+      (slurp-vine (str subFolder "/" txtPath)))
     )
 
 
@@ -104,9 +106,9 @@
   "runs clusterer through presorted indoors/outdoor vines"
   ([clusterer]
   (let [outdoorsVines   (map (partial slurp-vine "outdoors") 
-                        (list-files (str (path) "\\" (:opDir cfg) "\\" "outdoors") "txt"))
+                        (list-files (str (path) "/" (:opDir cfg) "/" "outdoors") "txt"))
         indoorpetsVines (map (partial slurp-vine "indoorpets") 
-                             (list-files (str (path) "\\" (:opDir cfg) "\\" "indoorpets") "txt"))
+                             (list-files (str (path) "/" (:opDir cfg) "/" "indoorpets") "txt"))
         clustered       (add-points
                           clusterer
                           (shuffle (concat outdoorsVines indoorpetsVines)))
@@ -127,30 +129,6 @@
      (println (second averages) " indoors together")
   )))
 
-     (defn print-clusterer [{cm :centroidMaps avg :avgFunc}]
-         (println (count cm) " clusters")
-         (println "average point so far")
-         (pprint (-> (apply avg (keys cm)) (dissoc :image1) (dissoc :wavPrint)))
-              (println "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-              (doall (map (fn [[centroid trainingPoints]]
-                            (println "")
-                            (println "==centroid==" )
-                            (pprint  (:profile (-> centroid (dissoc :image1) (dissoc :wavPrint))))
-                        
-                            (let [samples (take (min 10 (count trainingPoints))
-                                               (repeatedly #(rand-nth (seq trainingPoints))))]
-                              (println "      ++urls++")
-                              (doall (map #(println (:video_url  %)) samples))
-                              (println "      ++tweet++")
-                              (doall (map #(println (:text (:tweet %))) samples))
-                              (println "      ++self description++")
-                              (doall (map #(println (:description (:profile %))) samples))
-                              (println "      ++location++")
-                              (doall (map #(println (:location (:profile %))) samples))
-                              
-                              ))
-                          
-                  cm)))
      
      (defn toString [m] 
        "http://stackoverflow.com/questions/4555496/how-can-i-pretty-print-a-persistenthashmap-in-clojure-to-a-string"
@@ -173,7 +151,7 @@
              (join-map
                (fn [[centroid trainingPoints]]
                     (str-ln ""
-                        "==centroid==" 
+                        "~    centroids    ~" 
                         (toString  (:profile (-> centroid (dissoc :image1) (dissoc :wavPrint))))
                         (let [samples (take (min 10 (count trainingPoints))
                                                (repeatedly #(rand-nth (seq trainingPoints))))]
@@ -189,50 +167,27 @@
                               ))
                         ))         
                   cm)))
-
      
-     (defn spit-clusterer [clusterer filePath]
-       
-       
-       )
-     
-     
+     (defn output-report [clusterer]
+       (spit (str (path) "/" (:opDir cfg) "/" "clusterer-report.txt")
+             (clusterer-report clusterer)))
      
  (defn loop-vine-retention  [times]
   "just downloads a new vine every 3 seconds and extracts fingerprint"
   (let [clusterer (atom (ml/setup-all-clusterer))]
     (dotimes [n times]
       (try 
-      (do (. Thread (sleep 3000))
-        (print-clusterer
+      (do (. Thread (sleep 6000))
+        (output-report
            (swap! clusterer add-point (get-vine))
           ))
       (catch Exception e "")
       ))))
 	         
 
-;get avg fingerprint, find 4 url of closestest matching
-     
-     
-     
-(defn get-centroids 
-  "runs clusterer through presorted indoors/outdoor vines"
-  ([clusterer]
-  (let [outdoorsVines   (map (partial slurp-vine "outdoors") 
-                        (list-files (str (path) "\\" (:opDir cfg) "\\" "outdoors") "txt"))
-        indoorpetsVines (map (partial slurp-vine "indoorpets") 
-                             (list-files (str (path) "\\" (:opDir cfg) "\\" "indoorpets") "txt"))
-        clustered       (add-points
-                          clusterer
-                          (shuffle (concat outdoorsVines indoorpetsVines)))   ]
-    (print-clusterer clustered)
-  )))
-
-
-
 
 (defn revise-image1 [subfolder newDim vine]
-  (let [ newPath   (str (path) "\\" (:opDir cfg) "\\" subfolder "\\" (:id vine) ".txt")            ]
+  (let [ newPath   (str (path) "/" (:opDir cfg) "/" subfolder "/" (:id vine) ".txt")            ]
 	    (spit newPath (write-str     
                      (-> vine
                        (assoc :image1 (i/scale-down ((:localPath vine) "image1") newDim)))))
@@ -240,5 +195,6 @@
 
 
 (defn -main  [& args]
-
+  (println "hello")
+  (loop-vine-retention 1000000000)
   )
