@@ -117,7 +117,38 @@
                              }
                              )
                           0.0 ;threshold results in infinite loop for now
-                          :maxClusters 4 :centroidCapacity 1000 :centroidHalfLife 300)
+                          :maxClusters 7 :centroidCapacity 200 :centroidHalfLife 100)
   ))
+
+
+(defn setup-some-clusterer []
+  "clusteres based on wavprint, image, weeks old, followers, tweets, gender, lang, local_time"
+  (let [ tweet_rate_NF        (normalizerFunc)]
+  (ml/forgetful-clusterer (fn [v1 v2]                             
+                            (+  
+                               (- (w/similarity   (:wavPrint v1) (:wavPrint v2)) 3)
+                               (i/img-sim-score (:image1 v1) (:image1 v2))
+                               (Math/abs (- (tweet_rate_NF (/ (:statuses_count (:profile v1)) 
+                                                              (:weeks_old (:profile v1))))
+                                            (tweet_rate_NF (/ (:statuses_count (:profile v2))
+                                                              (:weeks_old (:profile v2))))))
+                               (gender-diff v1 v2)
+                               (/ (Math/abs (- (:local_hour v1) (:local_hour v2))) 24.0)
+                               ))
+                          (fn [& vines] 
+                            {:image1          (apply i/avg-colors (map :image1 vines))
+                             :wavPrint        (:wavPrint (rand-nth vines)) 
+                             :profile   {
+                                         :weeks_old       (avg-of-keyword vines :profile :weeks_old)
+                                         :statuses_count  (avg-of-keyword vines :profile :statuses_count)
+                                         :female?         (most-frequent (map (comp :female? :profile) vines))
+                                         }
+                              :local_hour      (avg-of-keyword vines  :local_hour)
+                             }
+                             )
+                          0.0 ;threshold results in infinite loop for now
+                          :maxClusters 6 :centroidCapacity 100 :centroidHalfLife 50)
+  ))
+
 
 (def languageCodes (vector "en" "es" "pt" "it" "tr" "ko" "fr" "ru" "de" "ja"))

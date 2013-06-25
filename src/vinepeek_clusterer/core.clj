@@ -154,7 +154,7 @@
                         "~    centroids    ~" 
                         (toString  (:profile (-> centroid (dissoc :image1) (dissoc :wavPrint))))
                         (let [samples (take (min 10 (count trainingPoints))
-                                               (repeatedly #(rand-nth (seq trainingPoints))))]
+                                               (shuffle (seq trainingPoints)))]
                           (str-ln
                               "      ++url++"
                               (join-map :video_url samples)
@@ -174,10 +174,10 @@
      
  (defn loop-vine-retention  [times]
   "just downloads a new vine every 3 seconds and extracts fingerprint"
-  (let [clusterer (atom (ml/setup-all-clusterer))]
+  (let [clusterer (atom (ml/setup-some-clusterer))]
     (dotimes [n times]
       (try 
-      (do (. Thread (sleep 6000))
+      (do (. Thread (sleep 3000))
         (output-report
            (swap! clusterer add-point (get-vine))
           ))
@@ -196,5 +196,5 @@
 
 (defn -main  [& args]
   (println "hello")
-  (loop-vine-retention 1000000000)
+  (loop-vine-retention 9000000000)
   )

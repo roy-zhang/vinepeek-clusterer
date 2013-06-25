@@ -43,9 +43,9 @@
       )
     
     (defn avg-wav-fingerprint-2 [& fingerprints]
-      ""
+      "heuristic, where avg is just fp closest to a random fp"
       (let [somefp (rand-nth fingerprints)]
-        (reduce (fn [fp1 fp2] (if (> (similarity somefp fp1) (similarity somefp fp2)) fp1 fp2))  fingerprints)
+        (reduce (fn [fp1 fp2] (if (> (similarity somefp fp1) (similarity somefp fp2)) fp1 fp2))  (dissoc fingerprints somefp))
         )
       )
 
